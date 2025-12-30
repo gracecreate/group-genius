@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Sparkles } from "lucide-react";
 import { Group } from "@/types/student";
+import { GroupExport } from "./GroupExport";
 
 interface GroupDisplayProps {
   groups: Group[];
@@ -32,10 +33,13 @@ export function GroupDisplay({ groups }: GroupDisplayProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-accent" />
-        Generated Groups ({groups.length})
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-accent" />
+          Generated Groups ({groups.length})
+        </h2>
+        <GroupExport groups={groups} />
+      </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {groups.map((group, index) => (

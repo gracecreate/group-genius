@@ -6,48 +6,32 @@ import { CaseManager } from "@/components/CaseManager";
 import { GroupDisplay } from "@/components/GroupDisplay";
 import { GroupSettings } from "@/components/GroupSettings";
 import { groupStudentsByPreferences } from "@/utils/groupingAlgorithm";
-import { Student, Group } from "@/types/student";
+import { Group } from "@/types/student";
 import { Shuffle, RotateCcw, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const DEFAULT_CASES = [
-  "Marketing Strategy",
-  "Financial Analysis",
-  "Operations Management",
-  "Product Launch",
-  "Sustainability Initiative",
-];
+import { useStudents } from "@/hooks/useStudents";
+import { useCases } from "@/hooks/useCases";
 
 const Index = () => {
-  const [cases, setCases] = useState<string[]>(DEFAULT_CASES);
-  const [students, setStudents] = useState<Student[]>([]);
+  const { cases, addCase, removeCase, loading: casesLoading } = useCases();
+  const { students, addStudent, removeStudent, clearAllStudents, loading: studentsLoading } = useStudents();
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupSize, setGroupSize] = useState(3);
   const { toast } = useToast();
 
-  const handleAddCase = useCallback((caseName: string) => {
-    setCases((prev) => [...prev, caseName]);
-  }, []);
+  const handleAddCase = useCallback(
+    async (caseName: string) => {
+      await addCase(caseName);
+    },
+    [addCase]
+  );
 
-  const handleRemoveCase = useCallback((caseName: string) => {
-    setCases((prev) => prev.filter((c) => c !== caseName));
-  }, []);
-
-  const handleAddStudent = useCallback((studentData: Omit<Student, "id">) => {
-    const newStudent: Student = {
-      ...studentData,
-      id: `student-${Date.now()}`,
-    };
-    setStudents((prev) => [...prev, newStudent]);
-    toast({
-      title: "Student added",
-      description: `${studentData.name} has been added to the list.`,
-    });
-  }, [toast]);
-
-  const handleRemoveStudent = useCallback((id: string) => {
-    setStudents((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  const handleRemoveCase = useCallback(
+    async (caseName: string) => {
+      await removeCase(caseName);
+    },
+    [removeCase]
+  );
 
   const handleGenerateGroups = useCallback(() => {
     if (students.length < 2) {
@@ -67,14 +51,16 @@ const Index = () => {
     });
   }, [students, groupSize, toast]);
 
-  const handleReset = useCallback(() => {
-    setStudents([]);
+  const handleReset = useCallback(async () => {
+    await clearAllStudents();
     setGroups([]);
     toast({
       title: "Reset complete",
       description: "All students and groups have been cleared.",
     });
-  }, [toast]);
+  }, [clearAllStudents, toast]);
+
+  const isLoading = casesLoading || studentsLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,33 +102,39 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container py-8">
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Left Column - Setup */}
-          <div className="lg:col-span-1 space-y-6">
-            <CaseManager
-              cases={cases}
-              onAddCase={handleAddCase}
-              onRemoveCase={handleRemoveCase}
-            />
-            <GroupSettings
-              groupSize={groupSize}
-              onGroupSizeChange={setGroupSize}
-            />
-            <StudentForm
-              availableCases={cases}
-              onAddStudent={handleAddStudent}
-            />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading...</p>
           </div>
+        ) : (
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Left Column - Setup */}
+            <div className="lg:col-span-1 space-y-6">
+              <CaseManager
+                cases={cases}
+                onAddCase={handleAddCase}
+                onRemoveCase={handleRemoveCase}
+              />
+              <GroupSettings
+                groupSize={groupSize}
+                onGroupSizeChange={setGroupSize}
+              />
+              <StudentForm
+                availableCases={cases}
+                onAddStudent={addStudent}
+              />
+            </div>
 
-          {/* Right Column - Students & Groups */}
-          <div className="lg:col-span-2 space-y-6">
-            <StudentList
-              students={students}
-              onRemoveStudent={handleRemoveStudent}
-            />
-            <GroupDisplay groups={groups} />
+            {/* Right Column - Students & Groups */}
+            <div className="lg:col-span-2 space-y-6">
+              <StudentList
+                students={students}
+                onRemoveStudent={removeStudent}
+              />
+              <GroupDisplay groups={groups} />
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
